@@ -4,20 +4,9 @@ from statsmodels.tsa.arima.model import ARIMA
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-def main():
-    st.title("Predicción de dividendos de empresas")
-    st.divider()
-    # Cargar los datos
-    data = pd.read_csv('./div.csv')
-    columns_to_drop = ['quartile', 'country', 'economic_sector', 'sub_industry', 'pollution', 'metric','wa_10','wa_11', 'wa_12', 'wa_13', 'wa_14', 'wa_15', 'wa_16', 'wa_17', 'wa_18', 'wa_19', 'wa_20']
-    data_filtered = data.drop(columns=columns_to_drop)
-    dat = data_filtered.fillna(0)
 
-    # Crear una lista de empresas para la selección
-    companies = dat['company'].unique().tolist()
-    selected_company = st.selectbox('Selecciona una empresa:', companies)
-    selected_year = st.selectbox('Selecciona un año para la predicción:', dat.columns[1:])
-    st.divider()
+@st.cache_data
+def load():
     if selected_year != '2010':
         year_anterior = str(int(selected_year) - 1)
         # Filtrar los datos para la empresa seleccionada
@@ -87,5 +76,22 @@ def main():
             st.markdown(abs(real_dividend - predicted_dividend))
     else:
         st.subheader("Introduzca un año mayor que 2010")
+
+
+def main():
+    st.title("Predicción de dividendos de empresas")
+    st.divider()
+    # Cargar los datos
+    data = pd.read_csv('./div.csv')
+    columns_to_drop = ['quartile', 'country', 'economic_sector', 'sub_industry', 'pollution', 'metric','wa_10','wa_11', 'wa_12', 'wa_13', 'wa_14', 'wa_15', 'wa_16', 'wa_17', 'wa_18', 'wa_19', 'wa_20']
+    data_filtered = data.drop(columns=columns_to_drop)
+    dat = data_filtered.fillna(0)
+    # Crear una lista de empresas para la selección
+    companies = dat['company'].unique().tolist()
+    selected_company = st.selectbox('Selecciona una empresa:', companies)
+    selected_year = st.selectbox('Selecciona un año para la predicción:', dat.columns[1:])
+    st.divider()
+    load()
+
 if __name__ == "__main__":
     main()
