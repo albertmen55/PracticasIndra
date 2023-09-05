@@ -5,8 +5,61 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-@st.cache_data
-def load():
+def view(dat, selected_year, selected_company, real_dividend, selected_row, forecast):
+    year_anterior = str(int(selected_year) - 1)
+    # Mostrar resultados en Streamlit
+    st.header(f"Predicción de Dividendos para {selected_company} en {selected_year} (ARIMA):")
+
+    # Agregar la predicción del año 2020 a la matriz de correlación
+    correlation_matrix = dat.loc[:, '2010':selected_year].corr()
+
+    # Dividir la pantalla en dos columnas
+    col1, col2 = st.columns(2)
+
+    # Renderizar el gráfico de avance de dividendos en la primera columna
+    with col1:
+        years = dat.columns[dat.columns.get_loc('2010'):dat.columns.get_loc(year_anterior) + 1]
+        dividend_values = selected_row[years].values
+        predicted_dividend = forecast.predicted_mean.values[0]
+        years = [int(year) for year in years]
+
+        years.append(selected_year)
+        dividend_values = list(dividend_values)
+        dividend_values.append(predicted_dividend)
+
+        plt.figure(figsize=(10, 6))
+        plt.plot(years, dividend_values, marker='o')
+        plt.title(f"Avance de Dividendos para {selected_company}")
+        plt.xlabel("Año")
+        plt.ylabel("Dividendos")
+        plt.grid(True)
+        st.pyplot(plt)
+
+    # Renderizar el mapa de calor en la segunda columna
+    with col2:
+        plt.figure(figsize=(10, 6))
+        sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
+        plt.title(f"Matriz de Correlación de Dividendos para {selected_company}")
+        st.pyplot(plt)
+
+    # Dividir la pantalla en dos columnas
+    co1, co2, co3 = st.columns(3)
+
+    with co1:
+        st.subheader(f"Predicción para {selected_year}:")
+        st.markdown(predicted_dividend)
+
+    with co2:
+        st.subheader(f"Valor Real de {selected_year}:")
+        st.markdown(real_dividend)
+
+    with co3:
+        st.subheader("Error cometido:")
+        st.markdown(abs(real_dividend - predicted_dividend))
+
+
+@st.cache_data()
+def load(dat, selected_company, selected_year):
     if selected_year != '2010':
         year_anterior = str(int(selected_year) - 1)
         # Filtrar los datos para la empresa seleccionada
@@ -20,62 +73,8 @@ def load():
         model_arima = ARIMA(dividends_series, order=(1, 1, 1))
         results_arima = model_arima.fit()
         forecast_arima = results_arima.forecast(steps=1)
-
-        # Mostrar resultados en Streamlit
-        st.header(f"Predicción de Dividendos para {selected_company} en {selected_year} (ARIMA):")
         forecast = results_arima.get_forecast(steps=1)
-
-        # Agregar la predicción del año 2020 a la matriz de correlación
-        correlation_matrix = dat.loc[:, '2010':selected_year].corr()
-
-        # Dividir la pantalla en dos columnas
-        col1, col2 = st.columns(2)
-
-        # Renderizar el gráfico de avance de dividendos en la primera columna
-        with col1:
-            years = dat.columns[dat.columns.get_loc('2010'):dat.columns.get_loc(year_anterior) + 1]
-            dividend_values = selected_row[years].values
-            predicted_dividend = forecast.predicted_mean.values[0]
-            years = [int(year) for year in years]
-
-            years.append(selected_year)
-            dividend_values = list(dividend_values)
-            dividend_values.append(predicted_dividend)
-
-            plt.figure(figsize=(10, 6))
-            plt.plot(years, dividend_values, marker='o')
-            plt.title(f"Avance de Dividendos para {selected_company}")
-            plt.xlabel("Año")
-            plt.ylabel("Dividendos")
-            plt.grid(True)
-            st.pyplot(plt)
-
-        # Renderizar el mapa de calor en la segunda columna
-        with col2:
-            plt.figure(figsize=(10, 6))
-            sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', center=0)
-            plt.title(f"Matriz de Correlación de Dividendos para {selected_company}")
-            st.pyplot(plt)
-
-        # Dividir la pantalla en dos columnas
-        co1, co2, co3 = st.columns(3)
-
-        with co1:
-
-            st.subheader(f"Predicción para {selected_year}:")
-            st.markdown(predicted_dividend)
-
-        with co2:
-
-            st.subheader(f"Valor Real de {selected_year}:")
-            st.markdown(real_dividend)
-
-        with co3:
-
-            st.subheader("Error cometido:")
-            st.markdown(abs(real_dividend - predicted_dividend))
-    else:
-        st.subheader("Introduzca un año mayor que 2010")
+        view(dat, selected_year, selected_company, real_dividend, selected_row, forecast)
 
 
 def main():
@@ -91,7 +90,8 @@ def main():
     selected_company = st.selectbox('Selecciona una empresa:', companies)
     selected_year = st.selectbox('Selecciona un año para la predicción:', dat.columns[1:])
     st.divider()
-    load()
+    load(dat, selected_company, selected_year)
+
 
 if __name__ == "__main__":
     main()
